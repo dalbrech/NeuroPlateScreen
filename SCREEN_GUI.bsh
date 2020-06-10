@@ -1,0 +1,353 @@
+//PROVIDES THE USER WITH A GUI FOR WELLPLATE EXPERIMENT PARAMETERS
+//RUN THIS SCRIPT IN MICROMANAGER ON THE MICROSCOPE COMPUTER TO BEGIN
+//load libraries
+addClassPath("Big.jar");
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import java.util.*;
+import java.io.*;
+import java.net.*;
+import java.awt.EventQueue;
+import edu.umassmed.big.SBSPlate;
+import ij.gui.*;
+import java.lang.Math;
+import org.micromanager.api.PositionList;
+import org.micromanager.api.Autofocus;
+import org.micromanager.api.AcquisitionOptions;
+import org.micromanager.PositionListDlg;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import ij.process.*;
+import ij.ImagePlus;
+import ij.io.FileSaver;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
+import net.miginfocom.swing.MigLayout;
+import org.micromanager.api.AcquisitionOptions; 
+
+//check for window
+if (f != void) {
+	f.dispatchEvent(new WindowEvent(f, WindowEvent.WINDOW_CLOSING));
+}
+try {
+	global.vport = mmc.getProperty("ArduinoValveControl", "ShowPort");
+	arduinoExists = true; 
+}
+catch (e) {
+	arduinoExists = false;
+}
+
+//create window
+f = new JFrame("High-Content Screen Settings");
+
+//define window properties
+f.setBounds(200,100,733,533);
+cp = f.getContentPane();
+cp.setLayout(new MigLayout("ins 20", "[para]0[][1001p,fill][601p][951p,fill]"));
+f.setSize(500, 500);
+f.setLocation(700, 300);
+f.setResizable(true);
+
+//Data entry for first well location. THIS SHOULD ALWAYS BE 1,1 AND MUST BE UPDATED
+firstWella1 = new JFormattedTextField("1");
+firstWella1.setColumns(12);
+firstWella1.addActionListener(this);
+firstWellb1 = new JFormattedTextField("1");
+firstWellb1.setColumns(12);
+firstWellb1.addActionListener(this);
+JLabel = fwlbl =  new JLabel("First Well {min 1,1}:   ");
+
+//data enty for last well location- defining rectangle of HCS
+lastWella1 = new JFormattedTextField("24");
+lastWella1.setColumns(12);
+lastWella1.addActionListener(this);
+lastWellb1 = new JFormattedTextField("16");
+lastWellb1.setColumns(12);
+lastWellb1.addActionListener(this);
+JLabel = lwlbl =  new JLabel("Last Well {max 24,16}:   ");
+
+//data entry for palte type (number of wells)
+plateType1 = new JFormattedTextField("384");
+plateType1.setColumns(12);
+plateType1.addActionListener(this);
+JLabel = ptlbl =  new JLabel("Plate Type:   ");
+
+//data entry for number of imaging sessions (cycles) in the trial
+cycleCount1 = new JFormattedTextField("4");
+cycleCount1.setColumns(12);
+cycleCount1.addActionListener(this);
+JLabel = cclbl =  new JLabel("# of Cycles:   ");
+
+//data entry for time in minutes between imaging sessions
+cycleInterval1 = new JFormattedTextField("258");
+cycleInterval1.setColumns(12);
+cycleInterval1.addActionListener(this);
+JLabel = cilbl =  new JLabel("Cycle Interval [min]:   ");
+
+//data entry for seconds between end of one well imagign and start of the next
+stimulusinterval = new JFormattedTextField("1");
+stimulusinterval.setColumns(12);
+stimulusinterval.addActionListener(this);
+JLabel = silbl =  new JLabel("Well-to-well Interval [s]:   ");
+
+//data entry for camera frame exposure in milliseconds
+exposure = new JFormattedTextField("100");
+exposure.setColumns(12);
+exposure.addActionListener(this);
+JLabel = exposurelbl = new JLabel("Exposure [ms]:   ");
+
+//data entry for trigger delay in milliseconds
+trigdinput = new JFormattedTextField("5");
+trigdinput.setColumns(12);
+trigdinput.addActionListener(this);
+JLabel = trigdlbl = new JLabel("Trigger Delay [ms]:   ");
+
+//data entry for trigger period in millisecons
+trigpinput = new JFormattedTextField("5");
+trigpinput.setColumns(12);
+trigpinput.addActionListener(this);
+JLabel = trigplbl = new JLabel("Trigger Period [ms]:   ");
+
+//DISABLED BY ROSS- Frames per second control
+//fpsinput = new JFormattedTextField("0");
+//fpsinput.setColumns(12);
+//fpsinput.addActionListener(this);
+//JLabel = framelbl = new JLabel("Acq. Speed [ms/fr]:   ");
+
+//data entry for how many times the well is imaged in a cycle before going to the next (usually 1)
+trialinput = new JFormattedTextField("1");
+trialinput.setColumns(12);
+trialinput.addActionListener(this);
+JLabel = triallbl = new JLabel("# of Trials:   ");
+
+//data entry for number of frames to capture in a trial
+triallengthinput = new JFormattedTextField("150");
+triallengthinput.setColumns(12);
+triallengthinput.addActionListener(this);
+JLabel = triallenglbl = new JLabel("Trial Length [fr]:   ");
+
+//data entry for how long the trial should be in seconds
+trialintinput = new JFormattedTextField("30");
+trialintinput.setColumns(12);
+trialintinput.addActionListener(this);
+JLabel = trialintlbl = new JLabel("Trial Interval [s]:   ");
+
+
+stimintinput = new JFormattedTextField("30");
+stimintinput.setColumns(12);
+stimintinput.addActionListener(this);
+JLabel = stimintlbl = new JLabel("Stimulus Interval [s]:   ");
+
+expvalues = new JFormattedTextField("25,i255,75,i0");
+expvalues.setColumns(12);
+expvalues.addActionListener(this);
+JLabel = stimswitchlbl =  new JLabel("Stimulus Pattern [fr]:   ");
+
+binvalues = new JFormattedTextField("2x2");
+binvalues.setColumns(12);
+binvalues.addActionListener(this);
+JLabel = setbinning = new JLabel("Binning:   ");
+
+JLabel = settingslbl = new JLabel("Camera Settings");
+settingslbl.setForeground(Color.BLACK);
+settingslbl.setFont(new Font("Serif",Font.BOLD,14));
+cp.add(settingslbl, "gapbottom 1, span, split 2, aligny center");
+cp.add(new JSeparator(),"gapleft rel,growx");
+
+//cp.add(framelbl);
+//cp.add(fpsinput, "wrap 10");
+
+cp.add(setbinning);
+cp.add(binvalues);
+
+cp.add(exposurelbl);
+cp.add(exposure,"wrap 10"); 
+
+cp.add(trigplbl);
+cp.add(trigpinput);
+
+cp.add(trigdlbl);
+cp.add(trigdinput, "wrap 10");
+
+JLabel = expsetlbl = new JLabel("Experiment Settings");
+expsetlbl.setForeground(Color.BLACK);
+expsetlbl.setFont(new Font("Serif",Font.BOLD,14));
+cp.add(expsetlbl, "gapbottom 1, span, split 2, aligny center");
+cp.add(new JSeparator(),"gapleft rel,growx");
+
+cp.add(ptlbl);
+cp.add(plateType1, "wrap 10");
+
+cp.add(fwlbl);
+cp.add(firstWella1);
+cp.add(firstWellb1,"wrap 10");
+
+cp.add(lwlbl);
+cp.add(lastWella1);
+cp.add(lastWellb1,"wrap 10");
+
+cp.add(stimswitchlbl);
+cp.add(expvalues);
+
+cp.add(triallenglbl);
+cp.add(triallengthinput,"wrap 10");
+
+cp.add(triallbl);
+cp.add(trialinput);
+
+cp.add(trialintlbl);
+cp.add(trialintinput,"wrap 10");
+
+cp.add(cclbl);
+cp.add(cycleCount1);
+
+cp.add(cilbl);
+cp.add(cycleInterval1, "wrap 10");
+
+cp.add(silbl);
+cp.add(stimulusinterval, "wrap 10");
+
+JButton applySettings = new JButton ("Apply");
+applySettings.setPreferredSize(new Dimension(95,20));
+applySettings.addActionListener(this);
+cp.add(applySettings,"wrap 10");
+
+//JButton runExp = new JButton ("Run");
+//runExp.setPreferredSize(new Dimension(95,20));
+//runExp.addActionListener(this);
+//cp.add(runExp,"wrap 10");
+
+directoryinput = new JFormattedTextField("H:\\tmp");
+
+f.pack();
+f.show();
+
+void actionPerformed(ActionEvent e) { 
+	if (e.getActionCommand() == "Apply"){
+		//String acqtext = fpsinput.getText();
+		String exposuretext = exposure.getText();
+		String binning = binvalues.getText();
+		String trialdurationtext = triallengthinput.getText();
+		String trialtext = trialinput.getText();
+		String trialinttext = trialintinput.getText();			
+		String trigdtext = trigdinput.getText();
+		String trigptext = trigpinput.getText();
+		String stiminttext = stimintinput.getText();
+		String savepathtext = directoryinput.getText();
+		String fwtexta = firstWella1.getText();
+		String fwtextb = firstWellb1.getText();
+		String lwtexta = lastWella1.getText();
+		String lwtextb = lastWellb1.getText();
+		String pttext = plateType1.getText();
+		String cctext = cycleCount1.getText();
+		String citext = cycleInterval1.getText();
+		String sitext = stimulusinterval.getText();
+		String evtext = expvalues.getText();
+
+		FileWriter fw = new FileWriter("H:/User Defined Acquisition Settings.txt");
+		PrintWriter pw = new PrintWriter(fw);
+
+		//pw.println(acqtext);
+		pw.println(exposuretext);
+		pw.println(binning);
+		pw.println(trialdurationtext);
+		pw.println(trialtext);
+		pw.println(trialinttext);
+		pw.println(trigdtext);
+		pw.println(trigptext);
+		pw.println(stiminttext); 
+		pw.println(savepathtext); 
+		pw.println(fwtexta); 
+		pw.println(fwtextb); 
+		pw.println(lwtexta);
+		pw.println(lwtextb);  
+		pw.println(pttext);  
+		pw.println(cctext);  
+		pw.println(citext);  
+		pw.println(sitext);  
+		pw.println(evtext);  
+		pw.close();
+			
+		cameraName = mmc.getCameraDevice(); 
+		mmc.setProperty(cameraName, "Binning", binning);
+		mmc.setProperty(cameraName, "Exposure", exposuretext);
+		double dtrigd = Double.parseDouble(trigdtext)/1000;
+		double dtrigp = Double.parseDouble(trigptext)/1000;
+		String strigd = String.valueOf(dtrigd);
+		String strigp = String.valueOf(dtrigp);
+		mmc.setProperty(cameraName, "OUTPUT TRIGGER DELAY[0]", strigd); // s
+		mmc.setProperty(cameraName, "OUTPUT TRIGGER PERIOD[0]", strigp); // s
+		mmc.setProperty(cameraName, "OUTPUT TRIGGER KIND[0]", "PROGRAMABLE");
+		mmc.setProperty(cameraName, "OUTPUT TRIGGER POLARITY[0]", "NEGATIVE");
+		
+		gui.clearMessageWindow();
+				
+		f2 = new JFrame("Review Experiment");
+		f2.setBounds(200,100,200,200);
+		cp2 = f2.getContentPane(); 
+		cp2.setLayout(new MigLayout()); 
+		f2.setSize(200, 500);
+		f2.setLocation(750, 300);
+		f2.setResizable(false);
+		textArea = new JTextArea(20, 40);
+		textArea.setEditable(false);
+		
+		textArea.setText(
+		"\nExposure: " +exposuretext+" ms"+
+		"\nBinning: " + binning+
+		"\nTrial Duration: " + trialdurationtext+" seconds"+
+		"\nTrials: " + trialtext +
+		"\nTrial Interval: " + trialinttext+" seconds"+
+      "\nTrigger Delay: " + trigdtext+" ms"+
+		"\nTrigger Period: " + trigptext+" ms"+
+		//"\nAcq. Speed: " + acqspeed+
+		"\nStimulus Interval: " + stiminttext+" seconds"+
+		"\nSave Dir: " + savepathtext+
+		"\nFirst Well: " + fwtexta+","+fwtextb+
+		"\nLast Well: " + lwtexta+","+lwtextb+
+		"\nPlate Type: " + pttext+
+		"\nCycle Count: " + cctext+
+		"\nCycle Interval: " + citext+" minutes"+
+		"\nWell Interval: " + sitext+" seconds"+
+		"\nStimulus Pattern: " + evtext+
+		//"\n\n"+"Total Time: " + totalxtimedec+" minutes"+
+		"\nConfirm Settings then press Run");
+	
+		JLabel = summarylbl = new JLabel("Settings Summary");
+		summarylbl.setForeground(Color.BLACK);
+		summarylbl.setFont(new Font("Serif",Font.BOLD,14));
+		cp2.add(summarylbl, "gapbottom 1, span, split 2, aligny center");
+		cp2.add(new JSeparator(),"gapleft rel,growx");
+		cp2.add(textArea);
+		JScrollPane scroll = new JScrollPane (textArea,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		cp2.add(scroll);
+	
+		f2.pack(); 
+		f2.show();
+		
+		print("Summary of all settings");
+		print("Exposure: " +exposuretext+" ms");
+		print("Binning: " + binning);
+		print("Trial Duration: " + trialdurationtext+" seconds");
+		print("Trials: " + trialtext);
+		print("Trial Interval: " + trialinttext+" seconds");
+      print("Trigger Delay: " + trigdtext+" ms");
+		print("Trigger Period: " + trigptext+" ms");
+		//print("Acq. Speed: " + acqspeed);
+		print("Stimulus Interval: " + stiminttext+" seconds");
+		print("Save Dir: " + savepathtext);
+		print("First Well: " + fwtexta+","+fwtextb);
+		print("Last Well: " + lwtexta+","+lwtextb);
+		print("Plate Type: " + pttext);
+		print("Cycle Count: " + cctext);
+		print("Cycle Interval: " + citext+" minutes");
+		print("Well Interval: " + sitext+" seconds");
+		print("Stimulus Pattern: " + evtext);
+		//print("Total Time: " + totalxtimedec+" minutes");
+		print("Confirm Settings then press Run");
+	}
+}
